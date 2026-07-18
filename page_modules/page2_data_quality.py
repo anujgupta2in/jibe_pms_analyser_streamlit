@@ -43,12 +43,26 @@ def render(data: dict):
 
     # ── Overview score card ───────────────────────────────────────────────────
     st.subheader("Dimension Summary")
-    cols_summary = st.columns(len(QUALITY_COLS))
-    for i, (orig, alias) in enumerate(QUALITY_COLS.items()):
+    
+    html_cards = []
+    for orig, alias in QUALITY_COLS.items():
         pct_good = (df[orig] == "Acceptable").mean() * 100
         pct_poor = (df[orig] == "Poor").mean() * 100
-        cols_summary[i].metric(alias, f"{pct_good:.0f}% Acceptable",
-                               f"{pct_poor:.0f}% Poor", delta_color="inverse")
+        card_html = f"""
+  <div style="flex: 1; min-width: 0; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+    <div style="font-size: 0.78rem; color: #64748b; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="{alias}">{alias}</div>
+    <div style="font-size: 1.15rem; font-weight: 800; color: #22c55e; margin-top: 4px;">{pct_good:.0f}% <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">Acceptable</span></div>
+    <div style="font-size: 0.75rem; font-weight: 600; color: #ef4444; margin-top: 4px; background: #fef2f2; padding: 2px 6.5px; border-radius: 4px; display: inline-block;">{pct_poor:.0f}% Poor</div>
+  </div>
+        """
+        html_cards.append(card_html)
+        
+    full_html = f"""
+<div style="display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px;">
+  {"".join(html_cards)}
+</div>
+    """
+    st.markdown(full_html, unsafe_allow_html=True)
 
     st.markdown("---")
 
