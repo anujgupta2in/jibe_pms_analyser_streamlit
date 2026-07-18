@@ -90,9 +90,10 @@ def render(data: dict):
         text_auto=".2f",
         template=PLOTLY_THEME,
         labels=dict(color="Avg Score"),
+        aspect="auto",
     )
     fig_heat.update_layout(
-        height=350,
+        height=420,
         xaxis_title="Quality Dimension",
         yaxis_title="Rank",
         margin=dict(t=10, b=10),
