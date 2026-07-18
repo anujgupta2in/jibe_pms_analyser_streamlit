@@ -74,7 +74,6 @@ def render(data: dict):
         plot_df_jittered[y_col] = plot_df_jittered[y_col] + np.random.normal(0, 0.08, size=len(plot_df))
 
         # Build scatter manually + add OLS trendline using numpy (no statsmodels needed)
-        import numpy as np
         fig = px.scatter(
             plot_df_jittered, x=x_col, y=y_col,
             opacity=0.35,
