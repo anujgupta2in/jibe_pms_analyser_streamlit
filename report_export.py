@@ -380,9 +380,9 @@ def _chart_support_awareness(support_res: pd.Series, total_resp: int, primary_he
     return _fig_to_png(fig)
 
 
-def _chart_correlation_heatmap(enc: pd.DataFrame, primary_hex: str = C_BLUE, method: str = "spearman") -> bytes:
+def _chart_correlation_heatmap(enc: pd.DataFrame, primary_hex: str = C_BLUE) -> bytes:
     _mpl_style()
-    corr_matrix = enc.corr(method=method, numeric_only=True)
+    corr_matrix = enc.corr(numeric_only=True)
     if corr_matrix.empty:
         return b""
         
@@ -402,15 +402,14 @@ def _chart_correlation_heatmap(enc: pd.DataFrame, primary_hex: str = C_BLUE, met
             ax.text(j, i, f"{val:.2f}", ha="center", va="center", 
                     color="white" if abs(val) > 0.45 else "black", fontsize=7)
                     
-    method_label = "Spearman" if method == "spearman" else "Pearson"
-    ax.set_title(f"Correlation Heatmap ({method_label}-Encoded)", fontsize=11, fontweight="bold", color=primary_hex, pad=15)
+    ax.set_title("Correlation Heatmap (Ordinal-Encoded)", fontsize=11, fontweight="bold", color=primary_hex, pad=15)
     fig.tight_layout()
     return _fig_to_png(fig)
 
 
-def _chart_drivers(enc: pd.DataFrame, primary_hex: str = C_BLUE, method: str = "spearman") -> bytes:
+def _chart_drivers(enc: pd.DataFrame, primary_hex: str = C_BLUE) -> bytes:
     _mpl_style()
-    corr_matrix = enc.corr(method=method, numeric_only=True)
+    corr_matrix = enc.corr(numeric_only=True)
     if "Satisfaction" not in corr_matrix.columns:
         return b""
     sat_corr = corr_matrix["Satisfaction"].drop("Satisfaction").sort_values(key=abs, ascending=True)
@@ -428,9 +427,7 @@ def _chart_drivers(enc: pd.DataFrame, primary_hex: str = C_BLUE, method: str = "
                 
     ax.set_yticks(range(len(features)))
     ax.set_yticklabels(features, fontsize=7.5)
-    
-    method_desc = "Spearman Rank Correlation (rho)" if method == "spearman" else "Pearson Correlation Coefficient (r)"
-    ax.set_xlabel(method_desc, fontsize=9, color=C_GREY)
+    ax.set_xlabel("Pearson Correlation Coefficient (r)", fontsize=9, color=C_GREY)
     ax.set_title("What Drives Satisfaction Most? (Drivers ranking)", fontsize=11, fontweight="bold", color=primary_hex, pad=10)
     ax.tick_params(axis="x", labelsize=8)
     fig.tight_layout()
@@ -556,7 +553,7 @@ def _chart_compare_bar(title: str, dims: list[str], scores_a: list[float], score
     return _fig_to_png(fig)
 
 
-def _chart_scatters_grid(enc: pd.DataFrame, primary_hex: str = C_BLUE, method: str = "spearman") -> bytes:
+def _chart_scatters_grid(enc: pd.DataFrame, primary_hex: str = C_BLUE) -> bytes:
     _mpl_style()
     fig, axes = plt.subplots(1, 3, figsize=(10.5, 3.8))
     
@@ -571,7 +568,6 @@ def _chart_scatters_grid(enc: pd.DataFrame, primary_hex: str = C_BLUE, method: s
     for i, (col_x, col_y, title) in enumerate(scatters_info):
         ax = axes[i]
         r_val, p_val = 0.0, 1.0
-        coeff_label = "rho" if method == "spearman" else "r"
         
         if col_x in enc.columns and col_y in enc.columns:
             sub = enc[[col_x, col_y]].dropna()
@@ -579,12 +575,7 @@ def _chart_scatters_grid(enc: pd.DataFrame, primary_hex: str = C_BLUE, method: s
                 x_vals = sub[col_x].values
                 y_vals = sub[col_y].values
                 
-                if method == "spearman":
-                    r_val, p_val = stats.spearmanr(x_vals, y_vals)
-                    coeff_label = "rho"
-                else:
-                    r_val, p_val = stats.pearsonr(x_vals, y_vals)
-                    coeff_label = "r"
+                r_val, p_val = stats.pearsonr(x_vals, y_vals)
                     
                 ax.scatter(x_vals, y_vals, color=primary_hex, alpha=0.35, edgecolors="none")
                 try:
@@ -593,7 +584,7 @@ def _chart_scatters_grid(enc: pd.DataFrame, primary_hex: str = C_BLUE, method: s
                     ax.plot(x_line, m*x_line + b, color="#ef4444", linewidth=1.5)
                 except Exception:
                     pass
-        ax.set_title(f"{title} ({coeff_label}={r_val:.2f})", fontsize=8.5, fontweight="bold", color=primary_hex)
+        ax.set_title(f"{title} (r={r_val:.2f})", fontsize=8.5, fontweight="bold", color=primary_hex)
         ax.set_xlabel(col_x, fontsize=7.5)
         ax.set_ylabel(col_y, fontsize=7.5)
         ax.tick_params(labelsize=7)
@@ -914,7 +905,6 @@ DEFAULT_PDF_OPTIONS = {
     
     "vis_corr_heatmap":     True,
     "vis_scatters":         True,
-    "vis_chisquare_table":  True,
     "vis_drivers_chart":    True,
     
     "vis_profile_rank":     True,
@@ -1231,57 +1221,26 @@ def generate_pdf(data: dict, active_filters: dict, pdf_options: dict | None = No
             pdf.embed_png(png_iss, w=CONTENT_W)
 
     # ── Section: Advanced Correlations ────────────────────────────────────────
-    if any(opts.get(k, True) for k in ["vis_corr_heatmap", "vis_scatters", "vis_chisquare_table", "vis_drivers_chart"]):
+    if any(opts.get(k, True) for k in ["vis_corr_heatmap", "vis_scatters", "vis_drivers_chart"]):
         pdf.add_page()
         pdf.section_title(_next_sec("Advanced Correlations & Drivers"))
         
         if opts.get("vis_corr_heatmap", True):
-            png_corr_heat = _chart_correlation_heatmap(data["encoded"], primary_hex, method=opts.get("corr_method", "spearman"))
+            png_corr_heat = _chart_correlation_heatmap(data["encoded"], primary_hex)
             if png_corr_heat:
                 pdf.embed_png(png_corr_heat, w=CONTENT_W)
                 pdf.ln(2)
                 
         if opts.get("vis_drivers_chart", True):
-            png_drivers = _chart_drivers(data["encoded"], primary_hex, method=opts.get("corr_method", "spearman"))
+            png_drivers = _chart_drivers(data["encoded"], primary_hex)
             if png_drivers:
                 pdf.embed_png(png_drivers, w=CONTENT_W)
                 pdf.ln(2)
                 
         if opts.get("vis_scatters", True):
-            png_scat = _chart_scatters_grid(data["encoded"], primary_hex, method=opts.get("corr_method", "spearman"))
+            png_scat = _chart_scatters_grid(data["encoded"], primary_hex)
             if png_scat:
                 pdf.embed_png(png_scat, w=CONTENT_W)
-                pdf.ln(4)
-                
-        if opts.get("vis_chisquare_table", True):
-            rows = _get_chisquare_data(df)
-            if rows:
-                pdf.set_font("Helvetica", "B", 9)
-                pdf.set_text_color(*primary_rgb)
-                pdf.cell(0, 6, "Chi-Square Association Tests (Categorical)", ln=True)
-                pdf.ln(1)
-                
-                cw = CONTENT_W / 6
-                pdf.set_fill_color(*primary_rgb)
-                pdf.set_text_color(255, 255, 255)
-                pdf.cell(cw * 1.5, 6, "Variable A", fill=True)
-                pdf.cell(cw * 1.5, 6, "Variable B", fill=True)
-                pdf.cell(cw * 0.7, 6, "Chi-Sq", fill=True, align="C")
-                pdf.cell(cw * 0.5, 6, "df", fill=True, align="C")
-                pdf.cell(cw * 0.8, 6, "p-value", fill=True, align="C")
-                pdf.cell(cw * 1.0, 6, "Significant?", fill=True, align="C", ln=True)
-                
-                pdf.set_text_color(*TEXT_DARK)
-                pdf.set_font("Helvetica", "", 7.5)
-                for i, r in enumerate(rows):
-                    fill = i % 2 == 0
-                    pdf.set_fill_color(*(light_rgb if fill else (255, 255, 255)))
-                    pdf.cell(cw * 1.5, 5.5, r["var_a"], fill=fill)
-                    pdf.cell(cw * 1.5, 5.5, r["var_b"], fill=fill)
-                    pdf.cell(cw * 0.7, 5.5, r["chi2"], fill=fill, align="C")
-                    pdf.cell(cw * 0.5, 5.5, r["df"], fill=fill, align="C")
-                    pdf.cell(cw * 0.8, 5.5, r["p_val"], fill=fill, align="C")
-                    pdf.cell(cw * 1.0, 5.5, r["sig"], fill=fill, align="C", ln=True)
                 pdf.ln(4)
 
     # ── Section: Respondent Profile ───────────────────────────────────────────
@@ -1576,47 +1535,7 @@ def generate_pdf(data: dict, active_filters: dict, pdf_options: dict | None = No
     return bytes(pdf.output())
 
 
-def _get_chisquare_data(df: pd.DataFrame) -> list:
-    from scipy import stats
-    cat_cols = {
-        "Rank":           RANK_COL,
-        "Tenure":         TENURE_COL,
-        "Correction %":   CORRECTION_COL,
-        "Training":       "Have you attended any of the JiBe PMS training sessions? [either on Training Centre/ Online session with PMS Team/ Marineflix Videos]",
-    }
 
-    pairs = [
-        ("Rank",         "Tenure"),
-        ("Rank",         "Correction %"),
-        ("Rank",         "Training"),
-        ("Tenure",       "Correction %"),
-        ("Tenure",       "Training"),
-        ("Training",     "Correction %"),
-    ]
-
-    chi_rows = []
-    for a, b in pairs:
-        if a not in cat_cols or b not in cat_cols:
-            continue
-        col_a = cat_cols[a]
-        col_b = cat_cols[b]
-        if col_a not in df.columns or col_b not in df.columns:
-            continue
-        sub = df[[col_a, col_b]].dropna()
-        if len(sub) < 5:
-            continue
-        ct = pd.crosstab(sub[col_a], sub[col_b])
-        try:
-            chi2, p, dof, _ = stats.chi2_contingency(ct)
-            sig = "***" if p < 0.001 else ("**" if p < 0.01 else ("*" if p < 0.05 else "No"))
-            chi_rows.append({
-                "var_a": a, "var_b": b,
-                "chi2": f"{chi2:.2f}", "df": str(dof),
-                "p_val": f"{p:.4f}", "sig": sig
-            })
-        except Exception:
-            pass
-    return chi_rows
 
 
 def generate_excel(data: dict) -> bytes:

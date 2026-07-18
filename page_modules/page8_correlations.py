@@ -18,23 +18,12 @@ def render(data: dict):
     enc = data["encoded"]
 
     st.title("📈 Advanced Correlations")
-    st.markdown("Statistical relationships between survey dimensions — correlation matrix, scatter plots, and chi-square tests.")
+    st.markdown("Statistical relationships between survey dimensions — correlation matrix and scatter plots.")
     st.markdown("---")
 
-    # ── Correlation method selector ───────────────────────────────────────────
-    corr_method = st.selectbox(
-        "Correlation Method",
-        ["Spearman Rank Correlation (Recommended for rating scales)", "Pearson Linear Correlation"],
-        index=0,
-        help="Spearman is rank-based and handles non-linear ordinal ratings (like Poor, Acceptable, Good) correctly. Pearson measures strict linear correlation.",
-        key="corr_method",
-    )
-    method_key = "spearman" if "Spearman" in corr_method else "pearson"
-    method_label = "Spearman ρ" if method_key == "spearman" else "Pearson r"
-
-    st.subheader(f"Correlation Heatmap ({method_label})")
+    st.subheader("Correlation Heatmap (Ordinal-Encoded)")
     st.caption("All rating columns encoded to integers. Values closer to ±1 show stronger relationships.")
-    corr_matrix = enc.corr(method=method_key, numeric_only=True)
+    corr_matrix = enc.corr(numeric_only=True)
 
     fig_corr = px.imshow(
         corr_matrix,
@@ -42,7 +31,7 @@ def render(data: dict):
         zmin=-1, zmax=1,
         text_auto=".2f",
         template=PLOTLY_THEME,
-        labels=dict(color=method_label),
+        labels=dict(color="Pearson r"),
         aspect="auto",
     )
     fig_corr.update_layout(
@@ -61,12 +50,7 @@ def render(data: dict):
         if len(plot_df) < 3:
             return None
             
-        if method_key == "spearman":
-            r, p = stats.spearmanr(plot_df[x_col], plot_df[y_col])
-            coeff_label = "ρ"
-        else:
-            r, p = stats.pearsonr(plot_df[x_col], plot_df[y_col])
-            coeff_label = "r"
+        r, p = stats.pearsonr(plot_df[x_col], plot_df[y_col])
 
         # Build jittered data for visualization only
         plot_df_jittered = plot_df.copy()
@@ -91,7 +75,7 @@ def render(data: dict):
                         line=dict(color="#ef4444", width=2), name="Trend")
         fig.update_layout(
             height=320,
-            title=f"{coeff_label} = {r:.3f}  |  p {'< 0.001' if p < 0.001 else f'= {p:.3f}'}",
+            title=f"r = {r:.3f}  |  p {'< 0.001' if p < 0.001 else f'= {p:.3f}'}",
             title_font_size=13,
             showlegend=False,
             margin=dict(t=40, b=10),
@@ -139,51 +123,6 @@ def render(data: dict):
                                        "Support Rating", "Correction % (encoded)")
         if fig5:
             st.plotly_chart(fig5, use_container_width=True)
-
-    st.markdown("---")
-
-    # ── Chi-square table for categorical pairs ────────────────────────────────
-    st.subheader("Chi-Square Association Tests (Categorical Variables)")
-    st.caption("p < 0.05 = statistically significant association. p < 0.001 = highly significant.")
-
-    cat_cols = {
-        "Rank":           RANK_COL,
-        "Tenure":         TENURE_COL,
-        "Correction %":   CORRECTION_COL,
-        "Training":       "Have you attended any of the JiBe PMS training sessions? [either on Training Centre/ Online session with PMS Team/ Marineflix Videos]",
-    }
-
-    pairs = [
-        ("Rank",         "Tenure"),
-        ("Rank",         "Correction %"),
-        ("Rank",         "Training"),
-        ("Tenure",       "Correction %"),
-        ("Tenure",       "Training"),
-        ("Training",     "Correction %"),
-    ]
-
-    chi_rows = []
-    for a, b in pairs:
-        col_a = cat_cols[a]
-        col_b = cat_cols[b]
-        sub = df[[col_a, col_b]].dropna()
-        if len(sub) < 5:
-            continue
-        ct = pd.crosstab(sub[col_a], sub[col_b])
-        try:
-            chi2, p, dof, _ = stats.chi2_contingency(ct)
-            sig = "***" if p < 0.001 else ("**" if p < 0.01 else ("*" if p < 0.05 else "—"))
-            chi_rows.append({
-                "Variable A": a, "Variable B": b,
-                "χ²": round(chi2, 2), "df": dof,
-                "p-value": f"{p:.4f}", "Significant": sig,
-            })
-        except Exception:
-            pass
-
-    if chi_rows:
-        chi_df = pd.DataFrame(chi_rows)
-        st.dataframe(chi_df, use_container_width=True, hide_index=True)
 
     st.markdown("---")
 
