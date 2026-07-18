@@ -96,10 +96,30 @@ def render(data: dict):
         )
         st.plotly_chart(fig_stack, use_container_width=True, key="nps_stack")
 
-        nps_c1, nps_c2, nps_c3 = st.columns(3)
-        nps_c1.metric("😊 Promoters",  f"{promoters} ({p_pct:.0f}%)")
-        nps_c2.metric("😐 Passives",   f"{passives} ({pa_pct:.0f}%)")
-        nps_c3.metric("😟 Detractors", f"{detractors} ({d_pct:.0f}%)")
+        st.markdown(
+            f"""
+<div style="display: flex; justify-content: space-between; margin-top: 16px; text-align: center; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+  <div style="flex: 1;">
+    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">😊 Promoters</div>
+    <div style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-top: 2px;">
+      {promoters} <span style="font-size: 0.8rem; font-weight: 500; color: #64748b;">({p_pct:.0f}%)</span>
+    </div>
+  </div>
+  <div style="flex: 1; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1;">
+    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">😐 Passives</div>
+    <div style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-top: 2px;">
+      {passives} <span style="font-size: 0.8rem; font-weight: 500; color: #64748b;">({pa_pct:.0f}%)</span>
+    </div>
+  </div>
+  <div style="flex: 1;">
+    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">😟 Detractors</div>
+    <div style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-top: 2px;">
+      {detractors} <span style="font-size: 0.8rem; font-weight: 500; color: #64748b;">({d_pct:.0f}%)</span>
+    </div>
+  </div>
+</div>""",
+            unsafe_allow_html=True,
+        )
 
     with col_dist:
         st.subheader("Overall Satisfaction Distribution")
