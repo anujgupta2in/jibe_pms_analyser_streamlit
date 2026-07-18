@@ -47,6 +47,18 @@ from page_modules import (
     page10_compare,
     page11_vessel_deepdive,
 )
+importlib.reload(page1_kpi)
+importlib.reload(page2_data_quality)
+importlib.reload(page3_software)
+importlib.reload(page4_fleet)
+importlib.reload(page5_profile)
+importlib.reload(page6_issues)
+importlib.reload(page7_satisfaction)
+importlib.reload(page8_correlations)
+importlib.reload(page9_text)
+importlib.reload(page10_vessels)
+importlib.reload(page10_compare)
+importlib.reload(page11_vessel_deepdive)
 
 PAGES = {
     "📊 KPI Dashboard":             page1_kpi,
