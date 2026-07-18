@@ -20,11 +20,20 @@ def render(data: dict):
     # ── Fleet overview ────────────────────────────────────────────────────────
     st.subheader("Fleet Composition")
     st.caption("ℹ️ Fleet composition and go-live timeline reflect the **full vessel registry** regardless of active filters. Satisfaction and quality charts below update with filters.")
-    c1, c2, c3 = st.columns(3)
-    matched = merged["Type"].notna().sum()
-    c1.metric("Total Fleet Vessels",    f"{len(fleet):,}")
-    c2.metric("Survey Respondents",     f"{len(merged):,}")
-    c3.metric("Vessels Matched in Survey", f"{matched:,}", f"{matched/len(merged)*100:.0f}% match rate")
+    c1, c2, c3, c4 = st.columns(4)
+    total_fleet = len(fleet)
+    total_respondents = len(merged)
+    unique_survey_vessels = merged[VESSEL_COL].dropna().nunique()
+    unique_matched_vessels = merged[merged["Type"].notna()][VESSEL_COL].nunique()
+
+    c1.metric("Total Fleet Vessels", f"{total_fleet:,}")
+    c2.metric("Survey Respondents", f"{total_respondents:,}")
+    c3.metric("Participating Vessels", f"{unique_survey_vessels:,}")
+    c4.metric(
+        "Vessels Matched in Fleet",
+        f"{unique_matched_vessels:,}",
+        f"{unique_matched_vessels / total_fleet * 100:.1f}% fleet coverage"
+    )
 
     col_fleet, col_div = st.columns(2)
     with col_fleet:
