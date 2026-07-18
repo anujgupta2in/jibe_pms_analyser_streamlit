@@ -274,6 +274,7 @@ def main():
                 "color_theme":       color_theme,
                 "vessel_limit":      vessel_limit,
                 "keyword_limit":     keyword_limit,
+                "corr_method":       "spearman" if "Spearman" in st.session_state.get("corr_method", "Spearman") else "pearson",
                 "cmp_dimension":     st.session_state.get("cmp_dimension"),
                 "cmp_val_a":         st.session_state.get("cmp_a"),
                 "cmp_val_b":         st.session_state.get("cmp_b"),

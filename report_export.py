@@ -380,9 +380,9 @@ def _chart_support_awareness(support_res: pd.Series, total_resp: int, primary_he
     return _fig_to_png(fig)
 
 
-def _chart_correlation_heatmap(enc: pd.DataFrame, primary_hex: str = C_BLUE) -> bytes:
+def _chart_correlation_heatmap(enc: pd.DataFrame, primary_hex: str = C_BLUE, method: str = "spearman") -> bytes:
     _mpl_style()
-    corr_matrix = enc.corr(numeric_only=True)
+    corr_matrix = enc.corr(method=method, numeric_only=True)
     if corr_matrix.empty:
         return b""
         
@@ -402,14 +402,15 @@ def _chart_correlation_heatmap(enc: pd.DataFrame, primary_hex: str = C_BLUE) -> 
             ax.text(j, i, f"{val:.2f}", ha="center", va="center", 
                     color="white" if abs(val) > 0.45 else "black", fontsize=7)
                     
-    ax.set_title("Correlation Heatmap (Ordinal-Encoded)", fontsize=11, fontweight="bold", color=primary_hex, pad=15)
+    method_label = "Spearman" if method == "spearman" else "Pearson"
+    ax.set_title(f"Correlation Heatmap ({method_label}-Encoded)", fontsize=11, fontweight="bold", color=primary_hex, pad=15)
     fig.tight_layout()
     return _fig_to_png(fig)
 
 
-def _chart_drivers(enc: pd.DataFrame, primary_hex: str = C_BLUE) -> bytes:
+def _chart_drivers(enc: pd.DataFrame, primary_hex: str = C_BLUE, method: str = "spearman") -> bytes:
     _mpl_style()
-    corr_matrix = enc.corr(numeric_only=True)
+    corr_matrix = enc.corr(method=method, numeric_only=True)
     if "Satisfaction" not in corr_matrix.columns:
         return b""
     sat_corr = corr_matrix["Satisfaction"].drop("Satisfaction").sort_values(key=abs, ascending=True)
@@ -427,7 +428,9 @@ def _chart_drivers(enc: pd.DataFrame, primary_hex: str = C_BLUE) -> bytes:
                 
     ax.set_yticks(range(len(features)))
     ax.set_yticklabels(features, fontsize=7.5)
-    ax.set_xlabel("Pearson Correlation Coefficient (r)", fontsize=9, color=C_GREY)
+    
+    method_desc = "Spearman Rank Correlation (rho)" if method == "spearman" else "Pearson Correlation Coefficient (r)"
+    ax.set_xlabel(method_desc, fontsize=9, color=C_GREY)
     ax.set_title("What Drives Satisfaction Most? (Drivers ranking)", fontsize=11, fontweight="bold", color=primary_hex, pad=10)
     ax.tick_params(axis="x", labelsize=8)
     fig.tight_layout()
@@ -553,7 +556,7 @@ def _chart_compare_bar(title: str, dims: list[str], scores_a: list[float], score
     return _fig_to_png(fig)
 
 
-def _chart_scatters_grid(enc: pd.DataFrame, primary_hex: str = C_BLUE) -> bytes:
+def _chart_scatters_grid(enc: pd.DataFrame, primary_hex: str = C_BLUE, method: str = "spearman") -> bytes:
     _mpl_style()
     fig, axes = plt.subplots(1, 3, figsize=(10.5, 3.8))
     
@@ -563,13 +566,26 @@ def _chart_scatters_grid(enc: pd.DataFrame, primary_hex: str = C_BLUE) -> bytes:
         ("Satisfaction", "PMS Tenure", "Sat vs PMS Tenure")
     ]
     
+    from scipy import stats
+    
     for i, (col_x, col_y, title) in enumerate(scatters_info):
         ax = axes[i]
+        r_val, p_val = 0.0, 1.0
+        coeff_label = "rho" if method == "spearman" else "r"
+        
         if col_x in enc.columns and col_y in enc.columns:
             sub = enc[[col_x, col_y]].dropna()
             if len(sub) >= 3:
                 x_vals = sub[col_x].values
                 y_vals = sub[col_y].values
+                
+                if method == "spearman":
+                    r_val, p_val = stats.spearmanr(x_vals, y_vals)
+                    coeff_label = "rho"
+                else:
+                    r_val, p_val = stats.pearsonr(x_vals, y_vals)
+                    coeff_label = "r"
+                    
                 ax.scatter(x_vals, y_vals, color=primary_hex, alpha=0.35, edgecolors="none")
                 try:
                     m, b = np.polyfit(x_vals, y_vals, 1)
@@ -577,7 +593,7 @@ def _chart_scatters_grid(enc: pd.DataFrame, primary_hex: str = C_BLUE) -> bytes:
                     ax.plot(x_line, m*x_line + b, color="#ef4444", linewidth=1.5)
                 except Exception:
                     pass
-        ax.set_title(title, fontsize=8.5, fontweight="bold", color=primary_hex)
+        ax.set_title(f"{title} ({coeff_label}={r_val:.2f})", fontsize=8.5, fontweight="bold", color=primary_hex)
         ax.set_xlabel(col_x, fontsize=7.5)
         ax.set_ylabel(col_y, fontsize=7.5)
         ax.tick_params(labelsize=7)
@@ -1220,19 +1236,19 @@ def generate_pdf(data: dict, active_filters: dict, pdf_options: dict | None = No
         pdf.section_title(_next_sec("Advanced Correlations & Drivers"))
         
         if opts.get("vis_corr_heatmap", True):
-            png_corr_heat = _chart_correlation_heatmap(data["encoded"], primary_hex)
+            png_corr_heat = _chart_correlation_heatmap(data["encoded"], primary_hex, method=opts.get("corr_method", "spearman"))
             if png_corr_heat:
                 pdf.embed_png(png_corr_heat, w=CONTENT_W)
                 pdf.ln(2)
                 
         if opts.get("vis_drivers_chart", True):
-            png_drivers = _chart_drivers(data["encoded"], primary_hex)
+            png_drivers = _chart_drivers(data["encoded"], primary_hex, method=opts.get("corr_method", "spearman"))
             if png_drivers:
                 pdf.embed_png(png_drivers, w=CONTENT_W)
                 pdf.ln(2)
                 
         if opts.get("vis_scatters", True):
-            png_scat = _chart_scatters_grid(data["encoded"], primary_hex)
+            png_scat = _chart_scatters_grid(data["encoded"], primary_hex, method=opts.get("corr_method", "spearman"))
             if png_scat:
                 pdf.embed_png(png_scat, w=CONTENT_W)
                 pdf.ln(4)
