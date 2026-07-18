@@ -45,6 +45,7 @@ from page_modules import (
     page9_text,
     page10_vessels,
     page10_compare,
+    page11_vessel_deepdive,
 )
 
 PAGES = {
@@ -57,6 +58,7 @@ PAGES = {
     "😊 Satisfaction & Support":    page7_satisfaction,
     "📈 Advanced Correlations":     page8_correlations,
     "💬 Open Text Feedback":        page9_text,
+    "🚢 Vessel Wise Analysis":      page11_vessel_deepdive,
     "🔎 Vessel Drill-Down":         page10_vessels,
     "⚖️ Compare":                   page10_compare,
 }
