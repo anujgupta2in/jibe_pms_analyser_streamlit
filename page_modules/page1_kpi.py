@@ -89,19 +89,17 @@ def render(data: dict):
             )
         fig_stack.update_layout(
             barmode="stack", template=PLOTLY_THEME,
-            height=70, margin=dict(t=0, b=0, l=0, r=0),
+            height=45, margin=dict(t=5, b=5, l=0, r=0),
             xaxis=dict(visible=False, range=[0, 100]),
             yaxis=dict(visible=False),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                        xanchor="center", x=0.5, font=dict(size=10)),
-            showlegend=True,
+            showlegend=False,
         )
         st.plotly_chart(fig_stack, use_container_width=True, key="nps_stack")
 
         nps_c1, nps_c2, nps_c3 = st.columns(3)
-        nps_c1.metric("😊 Promoters",  f"{promoters}", f"{p_pct:.0f}%")
-        nps_c2.metric("😐 Passives",   f"{passives}",  f"{pa_pct:.0f}%")
-        nps_c3.metric("😟 Detractors", f"{detractors}",f"{d_pct:.0f}%")
+        nps_c1.metric("😊 Promoters",  f"{promoters} ({p_pct:.0f}%)")
+        nps_c2.metric("😐 Passives",   f"{passives} ({pa_pct:.0f}%)")
+        nps_c3.metric("😟 Detractors", f"{detractors} ({d_pct:.0f}%)")
 
     with col_dist:
         st.subheader("Overall Satisfaction Distribution")
